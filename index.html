@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- UNCHANGED: head meta, title, fonts, Firebase scripts -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExpaTrak — Gradion Internal Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+  <style>
+    /* UNCHANGED: reset + CSS variables */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand:#ff6b00; --brand-dark:#e05e00; --brand-deeper:#c25200;
+      --bg:#f0f2f5; --card:#ffffff; --border:#e2e8f0;
+      --txt:#0f172a; --txt2:#64748b; --txt3:#94a3b8;
+      --green:#10b981; --green-l:#d1fae5; --green-d:#065f46;
+      --blue:#3b82f6;  --blue-l:#dbeafe;  --blue-d:#1d4ed8;
+      --yellow:#f59e0b;--yellow-l:#fef3c7;--yellow-d:#92400e;
+      --warn:#f97316;  --warn-l:#fed7aa;  --warn-d:#9a3412;
+      --red:#ef4444;   --red-l:#fee2e2;   --red-d:#991b1b;
+      --gray:#94a3b8;  --gray-l:#f1f5f9;
+      --font:'Inter',system-ui,sans-serif;
+      --r:12px; --r2:8px;
+      --sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+      --shm:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06);
+    }
+    body { font-family:var(--font); background:var(--bg); color:var(--txt); min-height:100vh; display:flex; }
+
+    /* UNCHANGED: login screen styles */
+    #loginScreen { position:fixed;inset:0;z-index:200;background:var(--brand);display:flex;align-items:center;justify-content:center;background-image:radial-gradient(circle at 20% 80%,rgba(255,255,255,.07) 0%,transparent 50%),radial-gradient(circle at 80% 20%,rgba(0,0,0,.1) 0%,transparent 50%); }
+    #loginScreen.hidden { display:none; }
+    .login-card { background:#fff;border-radius:20px;width:420px;max-width:95vw;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.25); }
+    .login-header { background:var(--brand);padding:28px 32px 24px;color:white; }
+    .login-logo { display:flex;align-items:center;gap:10px;margin-bottom:20px; }
+    .login-logo-mark { width:40px;height:40px;border-radius:8px;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#fff; }
+    .login-logo-text .brand-name { font-size:17px;font-weight:800;letter-spacing:1.5px;color:#fff; }
+    .login-logo-text .brand-sub  { font-size:9px;color:rgba(255,255,255,.7);letter-spacing:.5px;margin-top:2px; }
+    .login-product-name { font-size:26px;font-weight:700;color:#fff;letter-spacing:-.5px; }
+    .login-product-sub  { font-size:13px;color:rgba(255,255,255,.75);margin-top:4px; }
+    .login-body { padding:28px 32px 32px; }
+    .login-body h3 { font-size:15px;font-weight:600;margin-bottom:6px; }
+    .login-body p  { font-size:12px;color:var(--txt2);margin-bottom:22px;line-height:1.5; }
+    .btn-google { width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 20px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-size:14px;font-weight:600;color:var(--txt);cursor:pointer;font-family:var(--font);transition:all .18s; }
+    .btn-google:hover { border-color:var(--brand);background:#fff5ee;box-shadow:0 0 0 3px rgba(255,107,0,.12); }
+    .login-divider { height:1px;background:var(--border);margin:20px 0; }
+    .login-notice { display:flex;align-items:flex-start;gap:8px;padding:12px 14px;background:#fff5ee;border:1px solid rgba(255,107,0,.25);border-radius:8px;font-size:11px;color:var(--warn-d);line-height:1.5; }
+    #loginError { margin-top:14px;padding:10px 13px;background:var(--red-l);border-radius:8px;font-size:12px;color:var(--red-d);font-weight:500;display:none; }
+
+    /* UNCHANGED: app layout, sidebar styles */
+    #app { display:flex;width:100%; }
+    #app.hidden { display:none; }
+    .sidebar { width:270px;min-height:100vh;background:var(--brand);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto; }
+    .sb-logo { padding:20px 18px 18px;border-bottom:1px solid rgba(255,255,255,.18); }
+    .sb-logo-row { display:flex;align-items:center;gap:9px;margin-bottom:14px; }
+    .sb-logo-mark { width:36px;height:36px;border-radius:7px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#fff;flex-shrink:0; }
+    .sb-brand-name { font-size:15px;font-weight:800;letter-spacing:1.2px;color:#fff; }
+    .sb-brand-sub  { font-size:9px;color:rgba(255,255,255,.65);letter-spacing:.4px;margin-top:1px; }
+    .sb-product    { font-size:12px;font-weight:600;color:rgba(255,255,255,.9);letter-spacing:.2px; }
+    .sb-product-sub{ font-size:10px;color:rgba(255,255,255,.6);margin-top:2px; }
+    .sb-search { padding:12px 16px; }
+    .sb-search input { width:100%;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:7px;padding:7px 11px;color:#fff;font-size:12px;font-family:var(--font);outline:none; }
+    .sb-search input::placeholder { color:rgba(255,255,255,.55); }
+    .sb-search input:focus { border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.2); }
+    .sb-section { padding:5px 18px 3px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.45); }
+    .expat-item { margin:3px 8px;padding:9px 11px;border-radius:7px;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:9px; }
+    .expat-item:hover { background:rgba(0,0,0,.12); }
+    .expat-item.active { background:rgba(0,0,0,.22); }
+    .e-avatar { width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0; }
+    .e-info { flex:1;min-width:0; }
+    .e-name { font-size:12px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .e-role { font-size:10px;color:rgba(255,255,255,.55); }
+    .e-dot  { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+    .sb-footer { margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.18); }
+    .sb-user { display:flex;align-items:center;gap:9px;margin-bottom:10px; }
+    .sb-user-av { width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.25);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;overflow:hidden; }
+    .sb-user-av img { width:100%;height:100%;object-fit:cover; }
+    .sb-user-name  { font-size:11px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .sb-user-email { font-size:10px;color:rgba(255,255,255,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .btn-signout { width:100%;padding:7px;border-radius:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);font-size:11px;font-weight:500;cursor:pointer;font-family:var(--font);transition:background .15s; }
+    .btn-signout:hover { background:rgba(255,255,255,.22); }
+
+    /* UNCHANGED: main/topbar/button/badge/hero/stat styles */
+    .main { flex:1;min-width:0;overflow-y:auto; }
+    .topbar { background:#fff;border-bottom:1px solid var(--border);padding:13px 26px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20; }
+    .tb-title { font-size:14px;font-weight:600; }
+    .tb-sub   { font-size:11px;color:var(--txt2);margin-top:1px; }
+    .btn { display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:var(--font);transition:all .15s; }
+    .btn-primary { background:var(--brand);color:#fff; }
+    .btn-primary:hover { background:var(--brand-dark); }
+    .btn-ghost { background:transparent;color:var(--txt2);border:1.5px solid var(--border); }
+    .btn-ghost:hover { background:var(--gray-l); }
+    .btn-danger { background:transparent;color:var(--red-d);border:1.5px solid #fca5a5; }
+    .btn-danger:hover { background:var(--red-l); }
+    .content { padding:22px 26px; }
+    .badge { display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:100px;font-size:10px;font-weight:600; }
+    .badge-brand  { background:#fff3eb;color:var(--brand); }
+    .badge-blue   { background:var(--blue-l);color:var(--blue-d); }
+    .badge-green  { background:var(--green-l);color:var(--green-d); }
+    .badge-yellow { background:var(--yellow-l);color:var(--yellow-d); }
+    .badge-orange { background:var(--warn-l);color:var(--warn-d); }
+    .badge-red    { background:var(--red-l);color:var(--red-d); }
+    .badge-gray   { background:var(--gray-l);color:var(--txt2); }
+    .hero-card { background:#fff;border-radius:var(--r);padding:22px;display:flex;align-items:center;gap:18px;box-shadow:var(--sh);margin-bottom:20px; }
+    .hero-av { width:60px;height:60px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0; }
+    .hero-info { flex:1; }
+    .hero-name   { font-size:18px;font-weight:700;letter-spacing:-.4px; }
+    .hero-meta   { font-size:12px;color:var(--txt2);margin-top:3px; }
+    .hero-badges { display:flex;gap:6px;margin-top:9px;flex-wrap:wrap; }
+    .hero-stats  { display:flex;gap:22px; }
+    .stat   { text-align:center; }
+    .stat-v { font-size:20px;font-weight:700; }
+    .stat-l { font-size:10px;color:var(--txt2);margin-top:1px; }
+    .sec-hdr   { display:flex;align-items:center;justify-content:space-between;margin-bottom:12px; }
+    .sec-title { font-size:13px;font-weight:600; }
+    .sec-sub   { font-size:11px;color:var(--txt2); }
+
+    /* UNCHANGED: stepper styles */
+    .stepper-card { background:#fff;border-radius:var(--r);padding:22px;box-shadow:var(--sh);margin-bottom:20px;overflow-x:auto; }
+    .phase-row  { display:flex;gap:6px;margin-bottom:10px;min-width:680px; }
+    .phase-lbl  { padding:4px 12px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px; }
+    .phase-pre  { background:#fff3eb;color:var(--brand); }
+    .phase-post { background:var(--green-l);color:var(--green-d); }
+    .stepper    { display:flex;align-items:flex-start;min-width:680px;position:relative;padding-top:6px; }
+    .step-line  { position:absolute;top:18px;left:22px;right:22px;height:2px;background:var(--border);z-index:0; }
+    .step-fill  { height:100%;background:var(--green);transition:width .5s ease; }
+    .step-item  { flex:1;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1;cursor:pointer; }
+    .step-circle { width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:2px solid var(--border);background:#fff;transition:all .2s; }
+    .step-item.completed       .step-circle { background:var(--green); border-color:var(--green); color:#fff; }
+    .step-item.in_progress     .step-circle { background:var(--brand); border-color:var(--brand); color:#fff; box-shadow:0 0 0 4px rgba(255,107,0,.2); }
+    .step-item.action_required .step-circle { background:var(--warn);  border-color:var(--warn);  color:#fff; }
+    .step-item.overdue         .step-circle { background:var(--red);   border-color:var(--red);   color:#fff; }
+    .step-item.pending         .step-circle { color:var(--txt3); }
+    /* NEW: failed & extension step states */
+    .step-item.failed          .step-circle { background:var(--red);   border-color:var(--red);   color:#fff; }
+    .step-item.extension       .step-circle { background:var(--red);   border-color:var(--red);   color:#fff; opacity:.8; }
+    .step-label { text-align:center;margin-top:8px;max-width:86px; }
+    .sl-name { font-size:10px;font-weight:600;line-height:1.3; }
+    .sl-date { font-size:9px;color:var(--txt3);margin-top:1px; }
+    .sl-resp { font-size:9px;color:var(--txt2);margin-top:1px;font-style:italic; }
+
+    /* NEW: flag button on active step circles */
+    .step-flag-btn {
+      position:absolute; top:-5px; right:-6px;
+      width:16px; height:16px; border-radius:50%;
+      background:#fff; border:1.5px solid var(--warn);
+      color:var(--warn); font-size:9px; font-weight:900;
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      padding:0; line-height:1; z-index:10; transition:all .15s;
+    }
+    .step-flag-btn:hover { background:var(--warn); color:#fff; }
+
+    /* UNCHANGED: legend, gantt */
+    .legend { display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px; }
+    .lg-item { display:flex;align-items:center;gap:5px;font-size:11px;color:var(--txt2); }
+    .lg-dot  { width:10px;height:10px;border-radius:2px; }
+    .gantt-card  { background:#fff;border-radius:var(--r);padding:22px;box-shadow:var(--sh);margin-bottom:20px;overflow-x:auto; }
+    .gantt-wrap  { min-width:760px; }
+    .gantt-row   { display:flex;align-items:center;margin-bottom:7px;min-height:38px; }
+    .gantt-lbl   { width:190px;flex-shrink:0;padding-right:14px; }
+    .gl-name     { font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .gl-resp     { font-size:10px;color:var(--txt3);margin-top:1px; }
+    .gantt-track { flex:1;height:34px;background:var(--gray-l);border-radius:4px;position:relative;overflow:visible; }
+    .gantt-bar { position:absolute;height:100%;border-radius:4px;display:flex;align-items:center;padding:0 7px;font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;transition:filter .15s; }
+    .gantt-bar:hover { filter:brightness(.88); }
+    .gantt-bar.completed       { background:var(--green); }
+    .gantt-bar.in_progress     { background:var(--brand); }
+    .gantt-bar.action_required { background:var(--warn); }
+    .gantt-bar.overdue         { background:var(--red); }
+    .gantt-bar.pending         { background:var(--gray); }
+    /* NEW: failed & extension gantt bars */
+    .gantt-bar.failed    { background:var(--red); opacity:.7; }
+    .gantt-bar.extension {
+      background:var(--red);
+      background-image:repeating-linear-gradient(-45deg,transparent,transparent 4px,rgba(255,255,255,.25) 4px,rgba(255,255,255,.25) 8px);
+    }
+    .today-line { position:absolute;top:0;bottom:0;width:2px;background:rgba(239,68,68,.85);z-index:8;pointer-events:none; }
+
+    /* UNCHANGED: doc cards, renewal, biz trips, tooltip */
+    .cards-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:20px; }
+    .doc-card { background:#fff;border-radius:var(--r);padding:18px;box-shadow:var(--sh);border-left:4px solid var(--border); }
+    .doc-card.c-green  { border-left-color:var(--green); }
+    .doc-card.c-blue   { border-left-color:var(--blue); }
+    .doc-card.c-brand  { border-left-color:var(--brand); }
+    .doc-card.c-yellow { border-left-color:var(--yellow); }
+    .doc-card.c-orange { border-left-color:var(--warn); }
+    .doc-card.c-red    { border-left-color:var(--red); }
+    .doc-card.c-gray   { border-left-color:var(--gray); }
+    .dc-hdr  { display:flex;align-items:center;justify-content:space-between;margin-bottom:12px; }
+    .dc-title{ font-size:13px;font-weight:600; }
+    .dc-sub  { margin-top:3px; }
+    .dc-rows { display:flex;flex-direction:column;gap:7px; }
+    .dc-row  { display:flex;justify-content:space-between;align-items:center;padding:7px 9px;background:var(--gray-l);border-radius:5px;font-size:11px; }
+    .dc-row-lbl { color:var(--txt2); }
+    .dc-row-val { font-weight:600; }
+    .dc-action { margin-top:12px;padding:9px 11px;border-radius:7px;font-size:11px;font-weight:500; }
+    .a-warn  { background:var(--yellow-l);color:var(--yellow-d); }
+    .a-ok    { background:var(--green-l);color:var(--green-d); }
+    .a-urgent{ background:var(--red-l);color:var(--red-d); }
+    .a-proc  { background:#fff3eb;color:var(--brand); }
+    .a-idle  { background:var(--gray-l);color:var(--txt2); }
+    .renewal-card { background:#fff;border-radius:var(--r);padding:22px;box-shadow:var(--sh);margin-bottom:20px; }
+    .rn-info-row  { display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px; }
+    .rn-box       { padding:10px 13px;border-radius:7px;font-size:11px; }
+    .biz-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px; }
+    .biz-card { background:#fff;border-radius:var(--r);padding:18px;box-shadow:var(--sh); }
+    .biz-prog { margin-top:14px;height:6px;background:var(--gray-l);border-radius:3px;overflow:hidden; }
+    .biz-fill { height:100%;border-radius:3px;transition:width .5s; }
+    .tooltip { position:fixed;background:#1e293b;color:#fff;padding:10px 13px;border-radius:8px;font-size:11px;pointer-events:none;z-index:9999;max-width:230px;box-shadow:var(--shm);display:none; }
+    .tt-title { font-weight:600;margin-bottom:4px;font-size:12px; }
+    .tt-row   { color:#94a3b8;margin-top:2px; }
+    .tt-row span { color:#fff;font-weight:500; }
+
+    /* UNCHANGED: modal base styles */
+    .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:100; }
+    .modal { background:#fff;border-radius:14px;padding:26px;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2); }
+    .modal-title    { font-size:16px;font-weight:700;margin-bottom:18px; }
+    .form-group     { margin-bottom:14px; }
+    .form-label     { font-size:12px;font-weight:500;margin-bottom:5px;display:block; }
+    .form-input     { width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--font);outline:none;transition:border-color .15s; }
+    .form-input:focus { border-color:var(--brand); }
+    .form-row       { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+    .modal-actions  { display:flex;gap:9px;justify-content:flex-end;margin-top:18px; }
+
+    /* UNCHANGED: empty state, spinner, scrollbar, media query */
+    .empty { text-align:center;padding:70px 20px;color:var(--txt2); }
+    .empty h3 { font-size:15px;font-weight:600;margin-bottom:7px; }
+    .empty p  { font-size:12px; }
+    .spinner-overlay { position:fixed;inset:0;background:var(--brand);display:flex;align-items:center;justify-content:center;z-index:300; }
+    .spinner-overlay.hidden { display:none; }
+    .spinner { width:40px;height:40px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    ::-webkit-scrollbar { width:5px;height:5px; }
+    ::-webkit-scrollbar-thumb { background:#cbd5e1;border-radius:3px; }
+    @media (max-width:860px) { .sidebar { display:none; } .hero-stats { display:none; } }
+  </style>
+</head>
+<body>
+
+<!-- UNCHANGED: spinner overlay, tooltip -->
+<div id="spinnerOverlay" class="spinner-overlay"><div class="spinner"></div></div>
+<div id="tooltip" class="tooltip"></div>
+
+<!-- UNCHANGED: login screen -->
+<div id="loginScreen" class="hidden">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo">
+        <div class="login-logo-mark">G</div>
+        <div class="login-logo-text"><div class="brand-name">GRADION</div><div class="brand-sub">scaling business</div></div>
+      </div>
+      <div class="login-product-name">ExpaTrak</div>
+      <div class="login-product-sub">Document Timeline Manager — Internal Tool</div>
+    </div>
+    <div class="login-body">
+      <h3>Welcome back</h3>
+      <p>Sign in with your Gradion Google Workspace account to access the expat document timeline system.</p>
+      <button class="btn-google" onclick="signInWithGoogle()">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+        Sign in with Google
+      </button>
+      <div id="loginError"></div>
+      <div class="login-divider"></div>
+      <div class="login-notice"><span style="font-size:14px;flex-shrink:0;margin-top:1px">🔒</span><span>Access is restricted to <strong>@gradion.com</strong> Google Workspace accounts only.</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MAIN APP ════ -->
+<div id="app" class="hidden">
+
+  <!-- CHANGED: Add/Edit Expat Modal (shared, driven by modalMode) -->
+  <div id="modalOverlay" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-title" id="modalTitle">Add New Expat</div>
+      <input type="hidden" id="modalMode"   value="create" />
+      <input type="hidden" id="modalEditId" value="" />
+
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Full Name *</label><input id="f-name" class="form-input" placeholder="John Smith" /></div>
+        <div class="form-group"><label class="form-label">Nationality *</label><input id="f-nat" class="form-input" placeholder="French" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Position *</label><input id="f-pos" class="form-input" placeholder="Senior Engineer" /></div>
+        <div class="form-group"><label class="form-label">Department</label><input id="f-dept" class="form-input" placeholder="Operations" /></div>
+      </div>
+
+      <!-- NEW: Process Type — hidden in edit mode -->
+      <div class="form-group" id="processTypeGroup">
+        <label class="form-label">Process Type *</label>
+        <select id="f-proctype" class="form-input" onchange="onProcessTypeChange(this.value)">
+          <option value="full_onboarding">Full Onboarding (Standard — Pre + Post Arrival)</option>
+          <option value="new_recruit">New Recruit (DN1 Visa → WP → TRC)</option>
+          <option value="existing_employee">Existing Employee (WP &amp; TRC Renewal only)</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" id="startDateLabel">Target Start Date *</label>
+          <input id="f-start" type="date" class="form-input" />
+        </div>
+        <div class="form-group"><label class="form-label">Passport Expiry</label><input id="f-passport" type="date" class="form-input" /></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="modalSubmitBtn" onclick="submitModal()">Generate Timeline</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW: Mark as Failed / Delayed modal -->
+  <div id="delayModalOverlay" class="modal-overlay">
+    <div class="modal" style="max-width:430px">
+      <div class="modal-title">⚠ Mark Step as Failed / Delayed</div>
+      <input type="hidden" id="dm-stepIdx" />
+      <div class="form-group">
+        <label class="form-label">Affected Step</label>
+        <div id="dm-stepName" style="font-weight:600;font-size:12px;padding:9px 11px;background:var(--red-l);border-radius:7px;color:var(--red-d)"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Resolution / Corrective Action *</label>
+        <input id="dm-resolution" class="form-input" placeholder="e.g. Resubmit with corrected translation" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Additional Calendar Days Needed *</label>
+        <input id="dm-days" class="form-input" type="number" min="1" max="180" placeholder="e.g. 14" />
+        <div style="font-size:10px;color:var(--txt2);margin-top:4px">All subsequent steps will be pushed forward by this many days.</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeDelayModal()">Cancel</button>
+        <button class="btn" style="background:var(--red);color:#fff;font-weight:600" onclick="confirmDelay()">Apply Delay &amp; Rebuild Timeline</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- UNCHANGED: sidebar -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-row">
+        <div class="sb-logo-mark">G</div>
+        <div><div class="sb-brand-name">GRADION</div><div class="sb-brand-sub">scaling business</div></div>
+      </div>
+      <div class="sb-product">ExpaTrak</div>
+      <div class="sb-product-sub">Document Timeline Manager</div>
+    </div>
+    <div class="sb-search"><input type="text" placeholder="Search expats…" oninput="filterExpats(this.value)" /></div>
+    <div class="sb-section">Active Cases</div>
+    <div id="expatList"></div>
+    <div class="sb-footer">
+      <div class="sb-user">
+        <div class="sb-user-av" id="userAvatar">?</div>
+        <div style="flex:1;min-width:0"><div class="sb-user-name" id="userName">—</div><div class="sb-user-email" id="userEmail">—</div></div>
+      </div>
+      <button class="btn-signout" onclick="doSignOut()">Sign out</button>
+    </div>
+  </aside>
+
+  <!-- main -->
+  <main class="main">
+    <!-- CHANGED: topbar — added Edit/Delete buttons, shown only when expat selected -->
+    <div class="topbar">
+      <div>
+        <div class="tb-title" id="tbTitle">Document Timeline Manager</div>
+        <div class="tb-sub"   id="tbSub">Select an expat from the sidebar to view their timeline</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div id="expatActions" style="display:none;gap:8px;align-items:center">
+          <button class="btn btn-ghost" onclick="openEditModal()">✏ Edit</button>
+          <button class="btn btn-danger" onclick="deleteExpat()">🗑 Delete</button>
+        </div>
+        <button class="btn btn-primary" onclick="openModal()">+ Add Expat</button>
+      </div>
+    </div>
+    <div class="content" id="mainContent">
+      <div class="empty"><div style="font-size:46px;margin-bottom:14px">📋</div><h3>Select an expat to view their document timeline</h3><p>Choose from the sidebar or click "+ Add Expat" to generate a new timeline</p></div>
+    </div>
+  </main>
+
+</div><!-- #app -->
+
+<script>
+// ════════════════════════════════════════════════════════
+//  FIREBASE CONFIG  (replace placeholder values)
+// ════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+const ALLOWED_DOMAIN = "gradion.com";
+firebase.initializeApp(firebaseConfig);
+const auth     = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
+provider.setCustomParameters({ hd: ALLOWED_DOMAIN });
+
+// UNCHANGED: auth state listener, showLogin, showApp, signInWithGoogle, doSignOut, error helpers
+auth.onAuthStateChanged(user => {
+  document.getElementById('spinnerOverlay').classList.add('hidden');
+  if (user) {
+    if (!user.email.endsWith('@' + ALLOWED_DOMAIN)) { auth.signOut(); showLoginError(`Access denied. Only @${ALLOWED_DOMAIN} accounts are allowed.`); showLogin(); return; }
+    showApp(user);
+  } else { showLogin(); }
+});
+function showLogin() { document.getElementById('loginScreen').classList.remove('hidden'); document.getElementById('app').classList.add('hidden'); }
+function showApp(user) {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('userName').textContent  = user.displayName || user.email;
+  document.getElementById('userEmail').textContent = user.email;
+  const av = document.getElementById('userAvatar');
+  if (user.photoURL) { av.innerHTML = `<img src="${user.photoURL}" alt="" />`; } else { av.textContent = (user.displayName || user.email)[0].toUpperCase(); }
+  renderSidebar(); selectExpat(1);
+}
+function signInWithGoogle() { clearLoginError(); auth.signInWithPopup(provider).catch(err => { if (err.code==='auth/popup-closed-by-user') return; showLoginError('Sign-in failed: '+err.message); }); }
+function doSignOut() { auth.signOut(); }
+function showLoginError(msg) { const el=document.getElementById('loginError'); el.textContent=msg; el.style.display='block'; }
+function clearLoginError() { const el=document.getElementById('loginError'); el.textContent=''; el.style.display='none'; }
+
+// ════════════════════════════════════════════════════════
+//  UTILITIES  (unchanged)
+// ════════════════════════════════════════════════════════
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+const D = {
+  add(d,n)  { const x=new Date(d); x.setDate(x.getDate()+n); return x; },
+  diff(a,b) { return Math.round((new Date(b)-new Date(a))/86400000); },
+  fmt(d)    { if(!d) return '—'; return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); },
+  fmtShort(d){ if(!d) return ''; return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); }
+};
+function clamp(v,min,max){ return Math.min(max,Math.max(min,v)); }
+
+// ════════════════════════════════════════════════════════
+//  MOCK DATA  (unchanged — processType defaults to 'full_onboarding' when absent)
+// ════════════════════════════════════════════════════════
+const EXPATS = [
+  { id:1, name:"Pierre Dubois", nat:"French", initials:"PD", color:"#ff6b00", position:"Head of Operations", dept:"Operations", company:"TechVN Ltd.",
+    targetStart:D.add(TODAY,12), arrived:null, passportExpiry:D.add(TODAY,730), currentStep:4, overallStatus:"in_progress", processType:"full_onboarding",
+    steps:[
+      {id:1,name:"Doc. Legalization & Translation",resp:"Expat",phase:"pre",status:"completed",   start:D.add(TODAY,-55),end:D.add(TODAY,-38),notes:"All documents apostilled & translated in Paris."},
+      {id:2,name:"Demand Approval (Form 01)",      resp:"Admin",phase:"pre",status:"completed",   start:D.add(TODAY,-42),end:D.add(TODAY,-27),notes:"Submitted 30 days before target start. Approved."},
+      {id:3,name:"Immigration Letter",             resp:"Admin",phase:"pre",status:"completed",   start:D.add(TODAY,-38),end:D.add(TODAY,-33),notes:"Visa approval letter received."},
+      {id:4,name:"WP Submission (Form 11)",        resp:"Admin",phase:"pre",status:"in_progress", start:D.add(TODAY,-3), end:D.add(TODAY,7),  notes:"Submitted 15 days before target start. Awaiting DOLISA."},
+      {id:5,name:"Entry & Police Registration",    resp:"Expat",phase:"post",status:"pending",    start:D.add(TODAY,12),end:D.add(TODAY,15),  notes:""},
+      {id:6,name:"TRC Submission",                 resp:"Admin",phase:"post",status:"pending",    start:D.add(TODAY,17),end:D.add(TODAY,27),  notes:""},
+      {id:7,name:"TRC Issued",                     resp:"Admin",phase:"post",status:"pending",    start:D.add(TODAY,27),end:D.add(TODAY,29),  notes:""}
+    ],
+    docs:{ entryVisa:{lbl:"Entry Visa",         status:"approved",     issued:D.add(TODAY,-5), expiry:D.add(TODAY,25),  proc:"3–5 working days"},
+           wp:       {lbl:"Work Permit",          status:"processing",   issued:D.add(TODAY,-3), expiry:D.add(TODAY,362), proc:"5–10 working days"},
+           trc:      {lbl:"Temp. Residence Card", status:"pending",      issued:null,            expiry:null,             proc:"7–10 working days"} }, trips:[] },
+
+  { id:2, name:"James Wilson", nat:"British", initials:"JW", color:"#8b5cf6", position:"Senior Software Engineer", dept:"Technology", company:"TechVN Ltd.",
+    targetStart:D.add(TODAY,-65), arrived:D.add(TODAY,-60), passportExpiry:D.add(TODAY,540), currentStep:6, overallStatus:"action_required", processType:"full_onboarding",
+    steps:[
+      {id:1,name:"Doc. Legalization & Translation",resp:"Expat",phase:"pre",status:"completed",       start:D.add(TODAY,-125),end:D.add(TODAY,-108),notes:""},
+      {id:2,name:"Demand Approval (Form 01)",      resp:"Admin",phase:"pre",status:"completed",       start:D.add(TODAY,-112),end:D.add(TODAY,-97), notes:""},
+      {id:3,name:"Immigration Letter",             resp:"Admin",phase:"pre",status:"completed",       start:D.add(TODAY,-105),end:D.add(TODAY,-100),notes:""},
+      {id:4,name:"WP Submission (Form 11)",        resp:"Admin",phase:"pre",status:"completed",       start:D.add(TODAY,-80), end:D.add(TODAY,-72), notes:"Work permit issued."},
+      {id:5,name:"Entry & Police Registration",    resp:"Expat",phase:"post",status:"completed",      start:D.add(TODAY,-60), end:D.add(TODAY,-58), notes:"Police registration done."},
+      {id:6,name:"TRC Submission",                 resp:"Admin",phase:"post",status:"action_required",start:D.add(TODAY,0),   end:D.add(TODAY,10),  notes:"⚠ Must submit before entry visa expires in 8 days!"},
+      {id:7,name:"TRC Issued",                     resp:"Admin",phase:"post",status:"pending",        start:null,             end:null,             notes:""}
+    ],
+    docs:{ entryVisa:{lbl:"Entry Visa",         status:"expiring_soon",   issued:D.add(TODAY,-22),expiry:D.add(TODAY,8),   proc:"3–5 working days"},
+           wp:       {lbl:"Work Permit",          status:"active",          issued:D.add(TODAY,-72),expiry:D.add(TODAY,300), proc:"5–10 working days"},
+           trc:      {lbl:"Temp. Residence Card", status:"action_required", issued:null,            expiry:null,             proc:"7–10 working days"} },
+    trips:[{country:"Germany",flag:"🇩🇪",type:"Schengen Visa",appDate:D.add(TODAY,5),days:21,status:"planned"}] },
+
+  { id:3, name:"Maria García", nat:"Spanish", initials:"MG", color:"#10b981", position:"Finance Director", dept:"Finance", company:"TechVN Ltd.",
+    targetStart:D.add(TODAY,-400), arrived:D.add(TODAY,-395), passportExpiry:D.add(TODAY,200), currentStep:7, overallStatus:"renewal_due", processType:"full_onboarding",
+    steps:[
+      {id:1,name:"Doc. Legalization & Translation",resp:"Expat",phase:"pre",status:"completed",start:D.add(TODAY,-460),end:D.add(TODAY,-443),notes:""},
+      {id:2,name:"Demand Approval (Form 01)",      resp:"Admin",phase:"pre",status:"completed",start:D.add(TODAY,-450),end:D.add(TODAY,-435),notes:""},
+      {id:3,name:"Immigration Letter",             resp:"Admin",phase:"pre",status:"completed",start:D.add(TODAY,-440),end:D.add(TODAY,-436),notes:""},
+      {id:4,name:"WP Submission (Form 11)",        resp:"Admin",phase:"pre",status:"completed",start:D.add(TODAY,-420),end:D.add(TODAY,-413),notes:""},
+      {id:5,name:"Entry & Police Registration",    resp:"Expat",phase:"post",status:"completed",start:D.add(TODAY,-395),end:D.add(TODAY,-393),notes:""},
+      {id:6,name:"TRC Submission",                 resp:"Admin",phase:"post",status:"completed",start:D.add(TODAY,-390),end:D.add(TODAY,-380),notes:""},
+      {id:7,name:"TRC Issued",                     resp:"Admin",phase:"post",status:"completed",start:D.add(TODAY,-380),end:D.add(TODAY,-379),notes:"TRC valid until "+D.fmt(D.add(TODAY,35))}
+    ],
+    docs:{ entryVisa:{lbl:"Entry Visa",         status:"not_applicable",issued:null,            expiry:null,            proc:"—"},
+           wp:       {lbl:"Work Permit",          status:"renewal_due",  issued:D.add(TODAY,-365),expiry:D.add(TODAY,38), proc:"5–10 working days"},
+           trc:      {lbl:"Temp. Residence Card", status:"renewal_due",  issued:D.add(TODAY,-365),expiry:D.add(TODAY,35), proc:"7–10 working days"} },
+    trips:[{country:"Egypt",flag:"🇪🇬",type:"Business Visa",appDate:D.add(TODAY,-20),days:14,status:"completed"}] },
+
+  { id:4, name:"Yuki Tanaka", nat:"Japanese", initials:"YT", color:"#f59e0b", position:"Product Manager", dept:"Product", company:"TechVN Ltd.",
+    targetStart:D.add(TODAY,45), arrived:null, passportExpiry:D.add(TODAY,900), currentStep:2, overallStatus:"action_required", processType:"full_onboarding",
+    steps:[
+      {id:1,name:"Doc. Legalization & Translation",   resp:"Expat",phase:"pre",status:"in_progress",    start:D.add(TODAY,-5),end:D.add(TODAY,12),notes:"Translation in progress at Tokyo agency."},
+      {id:2,name:"Demand Approval (Form 01)",         resp:"Admin",phase:"pre",status:"action_required", start:D.add(TODAY,0), end:D.add(TODAY,15),notes:"⚠ Must submit Form 01 today — 45 days before target start."},
+      {id:3,name:"Immigration Letter (Visa Approval)",resp:"Admin",phase:"pre",status:"pending",         start:D.add(TODAY,12),end:D.add(TODAY,17),notes:""},
+      {id:4,name:"WP Submission (Form 11)",           resp:"Admin",phase:"pre",status:"pending",         start:D.add(TODAY,30),end:D.add(TODAY,40),notes:""},
+      {id:5,name:"Entry & Police Registration",       resp:"Expat",phase:"post",status:"pending",        start:D.add(TODAY,45),end:D.add(TODAY,48),notes:""},
+      {id:6,name:"TRC Submission",                    resp:"Admin",phase:"post",status:"pending",        start:D.add(TODAY,50),end:D.add(TODAY,60),notes:""},
+      {id:7,name:"TRC Issued",                        resp:"Admin",phase:"post",status:"pending",        start:null,           end:null,           notes:""}
+    ],
+    docs:{ entryVisa:{lbl:"Entry Visa",         status:"pending",    issued:null,expiry:null,proc:"3–5 working days"},
+           wp:       {lbl:"Work Permit",          status:"not_started",issued:null,expiry:null,proc:"5–10 working days"},
+           trc:      {lbl:"Temp. Residence Card", status:"not_started",issued:null,expiry:null,proc:"7–10 working days"} }, trips:[] }
+];
+
+// ════════════════════════════════════════════════════════
+//  CHANGED: STATUS HELPERS — added failed / extension
+// ════════════════════════════════════════════════════════
+const S_COLOR = {
+  completed:"green",active:"green",approved:"green",
+  in_progress:"brand",processing:"brand",planned:"blue",
+  action_required:"orange",expiring_soon:"yellow",renewal_due:"yellow",
+  overdue:"red", failed:"red", extension:"red",
+  pending:"gray",not_started:"gray",not_applicable:"gray"
+};
+const S_LABEL = {
+  completed:"Completed",active:"Active",approved:"Approved",
+  in_progress:"In Progress",processing:"Processing",planned:"Planned",
+  action_required:"Action Required",expiring_soon:"Expiring Soon",
+  renewal_due:"Renewal Due",overdue:"Overdue",
+  failed:"Failed",extension:"Delayed Extension",
+  pending:"Pending",not_started:"Not Started",not_applicable:"N/A"
+};
+const DOT_COL = { in_progress:"rgba(255,255,255,.9)",action_required:"#fde68a",renewal_due:"#fde68a",on_track:"rgba(255,255,255,.9)",completed:"#6ee7b7" };
+const STEP_ICONS = { completed:"✓",in_progress:"●",action_required:"!",overdue:"✕",failed:"✕",extension:"↻",pending:"" };
+
+// ════════════════════════════════════════════════════════
+//  UNCHANGED: renderSidebar, filterExpats
+// ════════════════════════════════════════════════════════
+let selectedId = null;
+function renderSidebar() {
+  document.getElementById('expatList').innerHTML = EXPATS.map(e=>`
+    <div class="expat-item${selectedId===e.id?' active':''}" onclick="selectExpat(${e.id})">
+      <div class="e-avatar" style="background:rgba(255,255,255,.2);color:#fff;font-size:12px">${e.initials}</div>
+      <div class="e-info"><div class="e-name">${e.name}</div><div class="e-role">${e.position}</div></div>
+      <div class="e-dot" style="background:${DOT_COL[e.overallStatus]||'rgba(255,255,255,.4)'}"></div>
+    </div>`).join('');
+}
+function filterExpats(q) {
+  q=q.toLowerCase();
+  document.querySelectorAll('.expat-item').forEach(el=>{ el.style.display=el.querySelector('.e-name').textContent.toLowerCase().includes(q)?'':'none'; });
+}
+
+// ════════════════════════════════════════════════════════
+//  CHANGED: selectExpat — shows Edit/Delete buttons
+// ════════════════════════════════════════════════════════
+function selectExpat(id) {
+  selectedId = id;
+  renderSidebar();
+  const e = EXPATS.find(x=>x.id===id);
+  document.getElementById('tbTitle').textContent = e.name;
+  document.getElementById('tbSub').textContent   = `${e.position} · ${e.dept} · ${e.company}`;
+  const actions = document.getElementById('expatActions');
+  actions.style.display = 'flex'; // show Edit / Delete
+  document.getElementById('mainContent').innerHTML =
+    heroCard(e) + stepperSection(e) + ganttSection(e) + docSection(e) + renewalSection(e) + tripsSection(e);
+}
+
+// ════════════════════════════════════════════════════════
+//  CHANGED: heroCard — dynamic step count (handles variable templates)
+// ════════════════════════════════════════════════════════
+function heroCard(e) {
+  const nonExt = e.steps.filter(s=>!s.isExtension);
+  const done   = nonExt.filter(s=>s.status==='completed').length;
+  const total  = nonExt.length;
+  const pct    = Math.round(done/total*100);
+  const dts    = D.diff(TODAY,e.targetStart);
+  const isRenewal = e.processType==='existing_employee';
+  const overall = {
+    in_progress:     `<span class="badge badge-brand">🟠 In Progress</span>`,
+    action_required: `<span class="badge badge-orange">⚠ Action Required</span>`,
+    renewal_due:     `<span class="badge badge-yellow">⏰ Renewal Due</span>`,
+    on_track:        `<span class="badge badge-blue">📅 On Track</span>`,
+    completed:       `<span class="badge badge-green">✓ Completed</span>`
+  }[e.overallStatus]||'';
+  const arrBadge = e.arrived
+    ? `<span class="badge badge-green">✅ In Vietnam</span>`
+    : dts>0 ? `<span class="badge badge-gray">${dts}d to ${isRenewal?'WP expiry':'start'}</span>`
+            : `<span class="badge badge-red">${isRenewal?'WP expired':'Started'} ${Math.abs(dts)}d ago</span>`;
+  return `
+  <div class="hero-card">
+    <div class="hero-av" style="background:${e.color}18;color:${e.color}">${e.initials}</div>
+    <div class="hero-info">
+      <div class="hero-name">${e.name}</div>
+      <div class="hero-meta">${e.nat} · ${e.position} · ${e.dept}</div>
+      <div class="hero-badges">
+        ${overall} ${arrBadge}
+        <span class="badge badge-gray">Step ${e.currentStep}/${total}</span>
+        <span class="badge badge-gray">Passport exp. ${D.fmt(e.passportExpiry)}</span>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-v" style="color:var(--brand)">${pct}%</div><div class="stat-l">Complete</div></div>
+      <div class="stat"><div class="stat-v">${done}/${total}</div><div class="stat-l">Steps Done</div></div>
+      <div class="stat">
+        <div class="stat-v" style="color:${dts<0?'#10b981':'var(--brand)'}">${Math.abs(dts)}</div>
+        <div class="stat-l">${dts<0?(isRenewal?'Days Past Expiry':'Days Since Start'):(isRenewal?'Days to WP Expiry':'Days to Start')}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+//  CHANGED: stepperSection — dynamic steps, flag buttons, variable phase labels
+// ════════════════════════════════════════════════════════
+function getPhaseLabels(pt) {
+  if (pt==='new_recruit')      return ['📋 Phase 1 — Pre-Arrival & DN1 Visa','🇻🇳 Phase 2 — Post-Arrival, WP & TRC'];
+  if (pt==='existing_employee')return ['🔄 Phase 1 — WP Renewal','🪪 Phase 2 — TRC Renewal'];
+  return ['📋 Phase 1 — Pre-Arrival & Work Permit','🇻🇳 Phase 2 — Post-Arrival & TRC'];
+}
+function stepperSection(e) {
+  const nonExt  = e.steps.filter(s=>!s.isExtension);
+  const done    = nonExt.filter(s=>s.status==='completed').length;
+  const fillPct = nonExt.length>1 ? (done/(nonExt.length-1))*100 : 0;
+  const phases  = getPhaseLabels(e.processType||'full_onboarding');
+  const preCount  = Math.max(1, e.steps.filter(s=>s.phase==='pre').length);
+  const postCount = Math.max(1, e.steps.filter(s=>s.phase==='post').length);
+  return `
+  <div class="sec-hdr"><div><div class="sec-title">Onboarding Progress</div><div class="sec-sub">Click the <span style="color:var(--warn);font-weight:600">⚑</span> flag on any active step to mark it as failed/delayed</div></div></div>
+  <div class="stepper-card">
+    <div class="phase-row">
+      <div class="phase-lbl phase-pre"  style="flex:${preCount}">${phases[0]}</div>
+      <div class="phase-lbl phase-post" style="flex:${postCount}">${phases[1]}</div>
+    </div>
+    <div class="stepper">
+      <div class="step-line"><div class="step-fill" style="width:${fillPct}%"></div></div>
+      ${e.steps.map((s,i)=>{
+        const icon    = STEP_ICONS[s.status]||s.id;
+        const canFlag = !s.isExtension && !['completed','failed','extension','overdue'].includes(s.status);
+        return `
+        <div class="step-item ${s.status}" title="${(s.notes||s.name).replace(/"/g,'&quot;')}">
+          <div style="position:relative;display:inline-block">
+            <div class="step-circle">${icon}</div>
+            ${canFlag?`<button class="step-flag-btn" onclick="event.stopPropagation();openDelayModal(${i})" title="Mark as Failed / Delayed">⚑</button>`:''}
+          </div>
+          <div class="step-label">
+            <div class="sl-name">${s.isExtension?'<span style="color:var(--red)">↻</span> ':''}<span style="color:${s.isExtension?'var(--red)':s.status==='failed'?'var(--red)':'inherit'}">${s.name}</span></div>
+            <div class="sl-date">${s.start?D.fmtShort(s.start):'—'}</div>
+            <div class="sl-resp">${s.resp}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+//  CHANGED: ganttSection — updated legend, handles failed/extension bars
+// ════════════════════════════════════════════════════════
+function ganttSection(e) {
+  const dated = e.steps.filter(s=>s.start&&s.end);
+  if (!dated.length) return '';
+  const allMs  = dated.flatMap(s=>[+new Date(s.start),+new Date(s.end)]);
+  let rMin = new Date(Math.min(...allMs)); rMin.setDate(rMin.getDate()-5);
+  let rMax = new Date(Math.max(...allMs)); rMax.setDate(rMax.getDate()+10);
+  const total  = D.diff(rMin,rMax);
+  const tPct   = clamp((D.diff(rMin,TODAY)/total)*100,0,100);
+  const months = [];
+  const cur = new Date(rMin); cur.setDate(1);
+  while (cur<=rMax) { const p=(D.diff(rMin,cur)/total)*100; if(p>=0&&p<=100) months.push({lbl:cur.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}),p}); cur.setMonth(cur.getMonth()+1); }
+  const rows = e.steps.map(s=>{
+    if (!s.start||!s.end) return `
+      <div class="gantt-row">
+        <div class="gantt-lbl"><div class="gl-name">${s.id}. ${s.name}</div><div class="gl-resp">${s.resp}</div></div>
+        <div class="gantt-track" style="position:relative">
+          <span style="position:absolute;inset:0;display:flex;align-items:center;padding:0 10px;font-size:10px;color:var(--txt3)">Date TBD</span>
+          ${tPct>0&&tPct<100?`<div class="today-line" style="left:${tPct}%"></div>`:''}
+        </div>
+      </div>`;
+    const sp=clamp((D.diff(rMin,s.start)/total)*100,0,100);
+    const ep=clamp((D.diff(rMin,s.end)/total)*100,0,100);
+    const w=Math.max(.8,ep-sp);
+    const dur=D.diff(s.start,s.end);
+    const note=(s.notes||'').replace(/'/g,"&apos;").replace(/"/g,'&quot;');
+    const label = s.isExtension ? `+${dur}d delay` : (w>7?dur+'d':'');
+    return `
+      <div class="gantt-row">
+        <div class="gantt-lbl"><div class="gl-name" style="color:${s.isExtension||s.status==='failed'?'var(--red)':'inherit'}">${s.isExtension?'↻ ':''}<span>${s.name}</span></div><div class="gl-resp">${s.resp}</div></div>
+        <div class="gantt-track" style="position:relative">
+          <div class="gantt-bar ${s.status}" style="left:${sp}%;width:${w}%"
+            onmouseenter="showTT(event,'${s.name}','${D.fmt(s.start)}','${D.fmt(s.end)}','${dur} days','${s.resp}','${note}')"
+            onmouseleave="hideTT()">${label}</div>
+          ${tPct>0&&tPct<100?`<div class="today-line" style="left:${tPct}%"></div>`:''}
+        </div>
+      </div>`;
+  }).join('');
+  return `
+  <div class="sec-hdr" style="margin-top:22px"><div><div class="sec-title">Timeline Gantt Chart</div><div class="sec-sub">Hover bars for details · <span style="color:#ef4444;font-weight:600">Red line = Today</span></div></div></div>
+  <div class="legend">
+    <div class="lg-item"><div class="lg-dot" style="background:var(--green)"></div>Completed</div>
+    <div class="lg-item"><div class="lg-dot" style="background:var(--brand)"></div>In Progress</div>
+    <div class="lg-item"><div class="lg-dot" style="background:var(--warn)"></div>Action Required</div>
+    <div class="lg-item"><div class="lg-dot" style="background:var(--red);opacity:.7"></div>Failed</div>
+    <div class="lg-item"><div class="lg-dot" style="background:var(--red);background-image:repeating-linear-gradient(-45deg,transparent,transparent 3px,rgba(255,255,255,.4) 3px,rgba(255,255,255,.4) 6px)"></div>Delayed Extension</div>
+    <div class="lg-item"><div class="lg-dot" style="background:var(--gray)"></div>Pending</div>
+  </div>
+  <div class="gantt-card">
+    <div class="gantt-wrap">
+      <div style="margin-left:190px;margin-bottom:6px;position:relative;height:20px">
+        ${months.map(m=>`<span style="position:absolute;left:${m.p}%;transform:translateX(-50%);font-size:10px;color:var(--txt3);font-weight:500">${m.lbl}</span>`).join('')}
+      </div>
+      ${rows}
+      <div style="margin-left:190px;margin-top:6px;display:flex;justify-content:space-between;font-size:10px;color:var(--txt3)">
+        <span>${D.fmt(rMin)}</span>
+        <span style="color:#ef4444;font-weight:600">▲ Today: ${D.fmt(TODAY)}</span>
+        <span>${D.fmt(rMax)}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// UNCHANGED: docSection, docCard, renewalSection, tripsSection
+function docSection(e) {
+  return `<div class="sec-hdr" style="margin-top:22px"><div><div class="sec-title">Document Status</div><div class="sec-sub">Processing time · Key dates · Responsible party</div></div></div><div class="cards-grid">${docCard('🛂',e.docs.entryVisa)}${docCard('📄',e.docs.wp)}${docCard('🪪',e.docs.trc)}</div>`;
+}
+function docCard(icon,doc) {
+  const c=S_COLOR[doc.status]||'gray'; const lbl=S_LABEL[doc.status]||doc.status;
+  const dte=doc.expiry?D.diff(TODAY,doc.expiry):null; const exC=dte!==null&&dte<45?'var(--red)':'inherit';
+  let action='';
+  if      (doc.status==='renewal_due')    action=`<div class="dc-action a-warn">⚠ Start renewal now — ${dte} days remaining</div>`;
+  else if (doc.status==='action_required')action=`<div class="dc-action a-warn">⚠ Submit documents immediately</div>`;
+  else if (doc.status==='expiring_soon')  action=`<div class="dc-action a-warn">⏰ Expires in ${dte} days — act now</div>`;
+  else if (doc.status==='processing'||doc.status==='in_progress') action=`<div class="dc-action a-proc">⏳ Processing: ${doc.proc}</div>`;
+  else if (['active','completed','approved'].includes(doc.status)) action=`<div class="dc-action a-ok">✓ No action required${dte!==null?` · ${dte}d remaining`:''}</div>`;
+  else if (['pending','not_started'].includes(doc.status)) action=`<div class="dc-action a-idle">⏸ Waiting for prior steps</div>`;
+  return `<div class="doc-card c-${c}"><div class="dc-hdr"><div><div class="dc-title">${icon} ${doc.lbl}</div><div class="dc-sub"><span class="badge badge-${c}">${lbl}</span></div></div><span style="font-size:24px">${icon}</span></div><div class="dc-rows"><div class="dc-row"><span class="dc-row-lbl">Processing Time</span><span class="dc-row-val">${doc.proc||'—'}</span></div><div class="dc-row"><span class="dc-row-lbl">Issued Date</span><span class="dc-row-val">${D.fmt(doc.issued)}</span></div><div class="dc-row"><span class="dc-row-lbl">Expiry Date</span><span class="dc-row-val" style="color:${exC}">${D.fmt(doc.expiry)}</span></div><div class="dc-row"><span class="dc-row-lbl">Responsible</span><span class="dc-row-val">Admin</span></div></div>${action}</div>`;
+}
+function renewalSection(e) {
+  if (!e.docs.wp.expiry) return '';
+  const exp=new Date(e.docs.wp.expiry); const rS=D.add(exp,-45); const rD=D.add(exp,-5);
+  const rMin=D.add(rS,-10); const rMax=D.add(exp,20); const tot=D.diff(rMin,rMax);
+  const pct=d=>clamp((D.diff(rMin,d)/tot)*100,0,100);
+  const tP=pct(TODAY),rsP=pct(rS),rdP=pct(rD),eP=pct(exp);
+  const dtsE=D.diff(TODAY,exp),dtsRs=D.diff(TODAY,rS),dtsRd=D.diff(TODAY,rD);
+  return `<div class="sec-hdr" style="margin-top:22px"><div><div class="sec-title">WP / TRC Renewal Timeline</div><div class="sec-sub">Based on WP expiry: ${D.fmt(exp)}</div></div></div>
+  <div class="renewal-card">
+    <div class="rn-info-row">
+      <div class="rn-box" style="background:var(--warn-l)"><div style="font-weight:600;color:var(--warn-d)">Renewal Window Opens</div><div style="color:var(--warn-d);font-size:12px;margin-top:2px">${D.fmt(rS)}</div><div style="font-size:10px;color:var(--warn-d);margin-top:2px">${dtsRs>0?`In ${dtsRs} days`:`${Math.abs(dtsRs)} days ago`}</div></div>
+      <div class="rn-box" style="background:var(--red-l)"><div style="font-weight:600;color:var(--red-d)">🚨 Absolute Deadline</div><div style="color:var(--red-d);font-size:12px;margin-top:2px">${D.fmt(rD)}</div><div style="font-size:10px;color:var(--red-d);margin-top:2px">${dtsRd>0?`In ${dtsRd} days`:`${Math.abs(dtsRd)} days ago · OVERDUE`}</div></div>
+      <div class="rn-box" style="background:var(--gray-l)"><div style="font-weight:600">WP Expiry Date</div><div style="font-size:12px;margin-top:2px">${D.fmt(exp)}</div><div style="font-size:10px;color:var(--txt2);margin-top:2px">${dtsE>0?`In ${dtsE} days`:`Expired ${Math.abs(dtsE)} days ago`}</div></div>
+    </div>
+    <div style="position:relative;padding-top:28px;padding-bottom:8px">
+      <div style="height:30px;border-radius:7px;position:relative;overflow:hidden;background:linear-gradient(to right,var(--green-l) 0%,var(--green-l) ${rsP}%,var(--yellow-l) ${rsP}%,var(--yellow-l) ${rdP}%,var(--red-l) ${rdP}%,var(--red-l) ${eP}%,var(--gray-l) ${eP}%)">
+        <div style="position:absolute;top:0;bottom:0;left:${tP}%;width:2px;background:#ef4444;z-index:5"></div>
+        <div style="position:absolute;top:0;bottom:0;left:${rsP}%;width:2px;background:var(--warn)"></div>
+        <div style="position:absolute;top:0;bottom:0;left:${rdP}%;width:2px;background:var(--red)"></div>
+      </div>
+      <div style="position:absolute;top:4px;left:${tP}%;transform:translateX(-50%);font-size:10px;font-weight:700;color:#ef4444;white-space:nowrap">Today ▼</div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--txt3)"><span>${D.fmt(rMin)}</span><span style="color:var(--warn);font-weight:600">▲ Start: −45d</span><span style="color:var(--red);font-weight:600">▲ Deadline: −5d</span><span style="color:var(--red)">Expiry</span><span>${D.fmt(rMax)}</span></div>
+    </div>
+    <div style="margin-top:12px;padding:10px 13px;background:#fff3eb;border-radius:7px;font-size:11px;color:var(--brand-deeper);border:1px solid rgba(255,107,0,.2)"><strong>WP Withdrawal Rule:</strong> WP cancellation must be completed within <strong>15 days</strong> after the last working day. Exit visa valid for <strong>15 days only</strong> after WP/TRC cancellation.</div>
+    ${dtsE<=45?`<div style="margin-top:8px;padding:10px 13px;background:var(--red-l);border-radius:7px;font-size:11px;color:var(--red-d);font-weight:500">🚨 TRC must also be renewed and must expire at least <strong>30 days before passport expiry</strong> (${D.fmt(e.passportExpiry)}).</div>`:''}
+  </div>`;
+}
+function tripsSection(e) {
+  if (!e.trips.length) return '';
+  return `<div class="sec-hdr" style="margin-top:22px"><div><div class="sec-title">Business Trip Visas</div><div class="sec-sub">Standalone processing timelines</div></div></div>
+  <div class="biz-grid" style="margin-bottom:24px">${e.trips.map(t=>{
+    const ready=D.add(t.appDate,t.days); const dLeft=D.diff(TODAY,ready);
+    const prog=t.status==='completed'?100:clamp((D.diff(t.appDate,TODAY)/t.days)*100,0,100);
+    const col=t.status==='completed'?'var(--green)':prog>80?'var(--warn)':'var(--brand)';
+    return `<div class="biz-card"><div style="font-size:30px;margin-bottom:8px">${t.flag}</div><div style="font-size:14px;font-weight:600">${t.country} Visa</div><div style="font-size:11px;color:var(--txt2)">${t.type} · ${t.days}-day processing</div><div style="height:1px;background:var(--border);margin:12px 0"></div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:7px"><span style="color:var(--txt2)">Applied: ${D.fmt(t.appDate)}</span><span style="color:var(--txt2)">Ready: ${D.fmt(ready)}</span></div><div class="biz-prog"><div class="biz-fill" style="width:${prog}%;background:${col}"></div></div><div style="display:flex;justify-content:space-between;font-size:10px;margin-top:5px"><span style="color:${col};font-weight:600">${Math.round(prog)}% complete</span><span style="color:var(--txt2)">${t.status==='completed'?'✓ Ready':`~${Math.max(0,dLeft)} days left`}</span></div></div>`;
+  }).join('')}</div>`;
+}
+
+// UNCHANGED: tooltip
+function showTT(ev,name,start,end,dur,resp,notes) {
+  const t=document.getElementById('tooltip');
+  t.style.display='block';
+  t.innerHTML=`<div class="tt-title">${name}</div><div class="tt-row">Start: <span>${start}</span></div><div class="tt-row">End: <span>${end}</span></div><div class="tt-row">Duration: <span>${dur}</span></div><div class="tt-row">Responsible: <span>${resp}</span></div>${notes?`<div class="tt-row" style="margin-top:6px;color:#cbd5e1">${notes}</div>`:''}`;
+  positionTT(ev);
+}
+function hideTT() { document.getElementById('tooltip').style.display='none'; }
+function positionTT(ev) { const t=document.getElementById('tooltip'); t.style.left=(ev.clientX+12)+'px'; t.style.top=(ev.clientY-10)+'px'; }
+document.addEventListener('mousemove',ev=>{ const t=document.getElementById('tooltip'); if(t.style.display==='block') positionTT(ev); });
+
+// ════════════════════════════════════════════════════════
+//  CHANGED: Edit/Delete expat
+// ════════════════════════════════════════════════════════
+function deleteExpat() {
+  if (!selectedId) return;
+  const e = EXPATS.find(x=>x.id===selectedId);
+  if (!confirm(`Delete "${e.name}" permanently? This cannot be undone.`)) return;
+  EXPATS.splice(EXPATS.findIndex(x=>x.id===selectedId), 1);
+  selectedId = null;
+  document.getElementById('expatActions').style.display = 'none';
+  document.getElementById('tbTitle').textContent = 'Document Timeline Manager';
+  document.getElementById('tbSub').textContent   = 'Select an expat from the sidebar to view their timeline';
+  document.getElementById('mainContent').innerHTML = `<div class="empty"><div style="font-size:46px;margin-bottom:14px">📋</div><h3>Select an expat to view their document timeline</h3><p>Choose from the sidebar or click "+ Add Expat" to generate a new timeline</p></div>`;
+  renderSidebar();
+}
+
+function openEditModal() {
+  if (!selectedId) return;
+  const e = EXPATS.find(x=>x.id===selectedId);
+  document.getElementById('modalTitle').textContent      = `Edit — ${e.name}`;
+  document.getElementById('modalSubmitBtn').textContent  = 'Save Changes';
+  document.getElementById('modalMode').value             = 'edit';
+  document.getElementById('modalEditId').value           = e.id;
+  document.getElementById('f-name').value    = e.name;
+  document.getElementById('f-nat').value     = e.nat;
+  document.getElementById('f-pos').value     = e.position;
+  document.getElementById('f-dept').value    = e.dept;
+  document.getElementById('f-start').value   = e.targetStart ? e.targetStart.toISOString().split('T')[0] : '';
+  document.getElementById('f-passport').value= e.passportExpiry ? e.passportExpiry.toISOString().split('T')[0] : '';
+  document.getElementById('processTypeGroup').style.display = 'none'; // hide in edit mode
+  document.getElementById('startDateLabel').textContent = 'Target Start Date';
+  document.getElementById('modalOverlay').style.display  = 'flex';
+}
+
+function saveEdit() {
+  const id = parseInt(document.getElementById('modalEditId').value);
+  const e  = EXPATS.find(x=>x.id===id);
+  if (!e) return;
+  const name = document.getElementById('f-name').value.trim();
+  const nat  = document.getElementById('f-nat').value.trim();
+  const pos  = document.getElementById('f-pos').value.trim();
+  const dept = document.getElementById('f-dept').value.trim();
+  const pp   = document.getElementById('f-passport').value;
+  if (!name||!nat||!pos) return alert('Name, Nationality and Position are required.');
+  e.name        = name;
+  e.nat         = nat;
+  e.position    = pos;
+  e.dept        = dept||e.dept;
+  e.initials    = name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+  if (pp) e.passportExpiry = new Date(pp);
+  closeModal();
+  renderSidebar();
+  selectExpat(id);
+}
+
+// ════════════════════════════════════════════════════════
+//  CHANGED: Modal open/submit — unified create/edit flow
+// ════════════════════════════════════════════════════════
+function openModal() {
+  document.getElementById('modalTitle').textContent     = 'Add New Expat';
+  document.getElementById('modalSubmitBtn').textContent = 'Generate Timeline';
+  document.getElementById('modalMode').value            = 'create';
+  document.getElementById('modalEditId').value          = '';
+  document.getElementById('f-name').value    = '';
+  document.getElementById('f-nat').value     = '';
+  document.getElementById('f-pos').value     = '';
+  document.getElementById('f-dept').value    = '';
+  document.getElementById('f-start').value   = D.add(TODAY,30).toISOString().split('T')[0];
+  document.getElementById('f-passport').value= D.add(TODAY,730).toISOString().split('T')[0];
+  document.getElementById('f-proctype').value= 'full_onboarding';
+  document.getElementById('processTypeGroup').style.display = '';
+  document.getElementById('startDateLabel').textContent = 'Target Start Date *';
+  document.getElementById('modalOverlay').style.display = 'flex';
+}
+function closeModal() { document.getElementById('modalOverlay').style.display='none'; }
+function submitModal() {
+  if (document.getElementById('modalMode').value==='edit') saveEdit(); else addExpat();
+}
+document.getElementById('modalOverlay').addEventListener('click',ev=>{ if(ev.target===document.getElementById('modalOverlay')) closeModal(); });
+
+// NEW: process type change handler — update date label
+function onProcessTypeChange(val) {
+  document.getElementById('startDateLabel').textContent =
+    val==='existing_employee' ? 'Current WP Expiry Date *' : 'Target Start Date *';
+}
+
+// ════════════════════════════════════════════════════════
+//  NEW: Step template generators (called by addExpat)
+// ════════════════════════════════════════════════════════
+function genFullOnboardingSteps(sd) {
+  return [
+    {id:1,name:"Doc. Legalization & Translation",   resp:"Expat",phase:"pre", status:"in_progress",    start:TODAY,           end:D.add(sd,-35), notes:"In progress"},
+    {id:2,name:"Demand Approval (Form 01)",         resp:"Admin",phase:"pre", status:"action_required", start:D.add(sd,-30),   end:D.add(sd,-15), notes:"Submit 30 days before target start"},
+    {id:3,name:"Immigration Letter (Visa Approval)",resp:"Admin",phase:"pre", status:"pending",         start:D.add(sd,-33),   end:D.add(sd,-28), notes:""},
+    {id:4,name:"WP Submission (Form 11)",           resp:"Admin",phase:"pre", status:"pending",         start:D.add(sd,-15),   end:D.add(sd,-5),  notes:""},
+    {id:5,name:"Entry & Police Registration",       resp:"Expat",phase:"post",status:"pending",         start:sd,              end:D.add(sd,3),   notes:""},
+    {id:6,name:"TRC Submission",                    resp:"Admin",phase:"post",status:"pending",         start:D.add(sd,5),     end:D.add(sd,15),  notes:""},
+    {id:7,name:"TRC Issued",                        resp:"Admin",phase:"post",status:"pending",         start:null,            end:null,          notes:""}
+  ];
+}
+function genNewRecruitSteps(sd) {
+  return [
+    {id:1,name:"Doc. Legalization & Translation",       resp:"Expat",phase:"pre", status:"in_progress",    start:TODAY,         end:D.add(sd,-28), notes:"Documents apostilled & translated overseas."},
+    {id:2,name:"DN1 Visa Application (Immigration Ltr)",resp:"Admin",phase:"pre", status:"pending",         start:D.add(sd,-28), end:D.add(sd,-21), notes:"Admin applies for entry approval letter from Ministry."},
+    {id:3,name:"Entry & Police Registration",           resp:"Expat",phase:"post",status:"pending",         start:sd,            end:D.add(sd,3),   notes:"Register at local police within 3 days of arrival."},
+    {id:4,name:"WP Submission (Form 11)",               resp:"Admin",phase:"post",status:"pending",         start:D.add(sd,3),   end:D.add(sd,13),  notes:"Work permit application submitted to DOLISA."},
+    {id:5,name:"Work Permit Issued",                    resp:"Admin",phase:"post",status:"pending",         start:D.add(sd,13),  end:D.add(sd,14),  notes:""},
+    {id:6,name:"TRC Submission",                        resp:"Admin",phase:"post",status:"pending",         start:D.add(sd,15),  end:D.add(sd,25),  notes:"Submit before entry visa expires."},
+    {id:7,name:"TRC Issued",                            resp:"Admin",phase:"post",status:"pending",         start:null,          end:null,          notes:"Valid up to 2 years."}
+  ];
+}
+function genExistingEmployeeSteps(wpExpiry) {
+  // sd = WP expiry date; renewal window opens at -45d
+  const rs = D.add(wpExpiry,-45);
+  return [
+    {id:1,name:"Initiate WP Renewal",       resp:"Admin",phase:"pre", status:"action_required",start:rs,              end:D.add(rs,7),  notes:"Must begin 45 days before WP expiry."},
+    {id:2,name:"WP Renewal Documentation",  resp:"Expat",phase:"pre", status:"pending",        start:D.add(rs,2),     end:D.add(rs,9),  notes:"Gather renewal supporting documents."},
+    {id:3,name:"WP Renewal Submission",     resp:"Admin",phase:"pre", status:"pending",        start:D.add(rs,9),     end:D.add(rs,19), notes:"5–10 working days processing time."},
+    {id:4,name:"New Work Permit Issued",    resp:"Admin",phase:"pre", status:"pending",        start:D.add(rs,19),    end:D.add(rs,20), notes:""},
+    {id:5,name:"TRC Renewal Submission",    resp:"Admin",phase:"post",status:"pending",        start:D.add(rs,20),    end:D.add(rs,30), notes:"Passport held 7–10 working days by Immigration."},
+    {id:6,name:"New TRC Issued",            resp:"Admin",phase:"post",status:"pending",        start:D.add(rs,30),    end:D.add(rs,31), notes:"TRC valid up to 2 years; must end 30d before passport expiry."}
+  ];
+}
+
+// ════════════════════════════════════════════════════════
+//  CHANGED: addExpat — uses process type to pick step template
+// ════════════════════════════════════════════════════════
+function addExpat() {
+  const name = document.getElementById('f-name').value.trim();
+  const nat  = document.getElementById('f-nat').value.trim();
+  const pos  = document.getElementById('f-pos').value.trim();
+  const dept = document.getElementById('f-dept').value.trim();
+  const sd   = new Date(document.getElementById('f-start').value);
+  const pe   = new Date(document.getElementById('f-passport').value);
+  const pt   = document.getElementById('f-proctype').value;
+  if (!name||!nat||!pos||!sd||isNaN(sd)) return alert('Please fill in all required fields.');
+
+  const inits = name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+  const pal   = ['#ff6b00','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#ec4899'];
+  const col   = pal[EXPATS.length % pal.length];
+
+  let steps, docs;
+  if (pt === 'new_recruit') {
+    steps = genNewRecruitSteps(sd);
+    docs  = {
+      entryVisa: {lbl:"DN1 / Entry Visa",    status:"pending",    issued:null, expiry:null, proc:"3–5 working days"},
+      wp:        {lbl:"Work Permit",          status:"not_started",issued:null, expiry:null, proc:"5–10 working days"},
+      trc:       {lbl:"Temp. Residence Card", status:"not_started",issued:null, expiry:null, proc:"7–10 working days"}
+    };
+  } else if (pt === 'existing_employee') {
+    steps = genExistingEmployeeSteps(sd); // sd = WP expiry date in this template
+    docs  = {
+      entryVisa: {lbl:"Entry Visa",           status:"not_applicable",issued:null, expiry:null, proc:"—"},
+      wp:        {lbl:"Work Permit",           status:"renewal_due",   issued:null, expiry:sd,   proc:"5–10 working days"},
+      trc:       {lbl:"Temp. Residence Card",  status:"renewal_due",   issued:null, expiry:D.add(sd,-5), proc:"7–10 working days"}
+    };
+  } else {
+    steps = genFullOnboardingSteps(sd);
+    docs  = {
+      entryVisa: {lbl:"Entry Visa",           status:"pending",    issued:null, expiry:null, proc:"3–5 working days"},
+      wp:        {lbl:"Work Permit",          status:"not_started",issued:null, expiry:null, proc:"5–10 working days"},
+      trc:       {lbl:"Temp. Residence Card", status:"not_started",issued:null, expiry:null, proc:"7–10 working days"}
+    };
+  }
+
+  EXPATS.push({
+    id: EXPATS.length+1, name, nat, initials:inits, color:col,
+    position:pos, dept:dept||'N/A', company:'TechVN Ltd.',
+    targetStart:sd, arrived:null, passportExpiry:pe,
+    currentStep:1, overallStatus:'action_required',
+    processType:pt, steps, docs, trips:[]
+  });
+  closeModal();
+  renderSidebar();
+  selectExpat(EXPATS[EXPATS.length-1].id);
+}
+
+// ════════════════════════════════════════════════════════
+//  NEW: Exception handling — Mark step as Failed / Delayed
+// ════════════════════════════════════════════════════════
+function openDelayModal(stepIdx) {
+  if (!selectedId) return;
+  const e = EXPATS.find(x=>x.id===selectedId);
+  const s = e.steps[stepIdx];
+  if (!s) return;
+  document.getElementById('dm-stepIdx').value   = stepIdx;
+  document.getElementById('dm-stepName').textContent = `Step ${s.id}: ${s.name}`;
+  document.getElementById('dm-resolution').value = '';
+  document.getElementById('dm-days').value       = '';
+  document.getElementById('delayModalOverlay').style.display = 'flex';
+}
+function closeDelayModal() { document.getElementById('delayModalOverlay').style.display='none'; }
+document.getElementById('delayModalOverlay').addEventListener('click',ev=>{ if(ev.target===document.getElementById('delayModalOverlay')) closeDelayModal(); });
+
+function confirmDelay() {
+  if (!selectedId) return;
+  const stepIdx    = parseInt(document.getElementById('dm-stepIdx').value);
+  const resolution = document.getElementById('dm-resolution').value.trim();
+  const days       = parseInt(document.getElementById('dm-days').value);
+  if (!resolution || isNaN(days) || days < 1) return alert('Please fill in Resolution and Days.');
+
+  const e = EXPATS.find(x=>x.id===selectedId);
+  const s = e.steps[stepIdx];
+
+  // 1. Mark failed step
+  s.status = 'failed';
+  s.notes  = (s.notes?s.notes+' | ':'') + `FAILED: ${resolution}`;
+
+  // 2. Build extension step immediately after
+  const extStart = s.end ? new Date(s.end) : new Date(TODAY);
+  const extEnd   = D.add(extStart, days);
+  const extStep  = {
+    id: s.id + '-ext',
+    name: `Resolution: ${resolution}`,
+    resp: 'Admin',
+    phase: s.phase,
+    status: 'extension',
+    start: extStart,
+    end: extEnd,
+    notes: `Delay of ${days} calendar days applied.`,
+    isExtension: true
+  };
+  e.steps.splice(stepIdx + 1, 0, extStep);
+
+  // 3. Push all subsequent steps forward by N days
+  for (let i = stepIdx + 2; i < e.steps.length; i++) {
+    const st = e.steps[i];
+    if (st.start) st.start = D.add(st.start, days);
+    if (st.end)   st.end   = D.add(st.end,   days);
+  }
+
+  // 4. Update overall status
+  e.overallStatus = 'action_required';
+
+  closeDelayModal();
+  selectExpat(selectedId); // re-render everything
+}
+
+// UNCHANGED: init
+renderSidebar();
+selectExpat(1);
+</script>
+</body>
+</html>
